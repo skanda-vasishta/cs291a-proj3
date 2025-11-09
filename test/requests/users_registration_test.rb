@@ -23,6 +23,7 @@ class UsersRegistrationTest < ActionDispatch::IntegrationTest
     assert user_data["id"].present?
     assert user_data["created_at"].present?
     assert user_data["last_active_at"].present?
+    assert body["token"].present?
   end
 
   test "returns errors when registration is invalid" do
