@@ -1,10 +1,11 @@
 class AuthController < ApplicationController
-  before_action :require_session_user!, only: %i[logout refresh me]
+  before_action :require_session_user!, only: %i[refresh me]
 
   def register
     user = User.new(register_params)
 
     if user.save
+      user.create_expert_profile! unless user.expert_profile
       establish_session_for(user)
       render json: auth_response(user), status: :created
     else

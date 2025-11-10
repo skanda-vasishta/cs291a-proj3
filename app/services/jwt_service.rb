@@ -6,9 +6,9 @@ class JwtService
 
   class << self
     def encode(payload, exp: DEFAULT_EXPIRY.from_now)
-      payload = payload.dup
-      payload[:exp] = exp.to_i
-      JWT.encode(payload, secret_key, ALGORITHM)
+      claims = normalize_payload(payload)
+      claims[:exp] = exp.to_i
+      JWT.encode(claims, secret_key, ALGORITHM)
     end
 
     def decode(token)
@@ -19,6 +19,18 @@ class JwtService
     end
 
     private
+
+    def normalize_payload(payload)
+      if payload.is_a?(Hash)
+        payload.deep_dup.symbolize_keys
+      elsif payload.respond_to?(:to_h)
+        payload.to_h.symbolize_keys
+      elsif payload.respond_to?(:id)
+        { user_id: payload.id }
+      else
+        raise ArgumentError, "Unsupported payload type for JWT encoding"
+      end
+    end
 
     def secret_key
       Rails.application.credentials.dig(:jwt_secret) || Rails.application.secret_key_base

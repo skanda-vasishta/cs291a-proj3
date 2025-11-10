@@ -42,7 +42,11 @@ class ConversationsController < ApplicationController
   end
 
   def conversation_params
-    params.require(:conversation).permit(:title)
+    if params[:conversation].present?
+      params.require(:conversation).permit(:title)
+    else
+      { title: params[:title] }
+    end
   end
 
 end

@@ -28,4 +28,12 @@ Rails.application.routes.draw do
     post "/conversations/:conversation_id/unclaim", to: "expert#unclaim"
     get "/assignments/history", to: "expert#history"
   end
+
+  namespace :api do
+    get "/conversations/updates", to: "conversations#updates"
+    get "/messages/updates", to: "messages#updates"
+    get "/expert-queue/updates", to: "expert_queue#updates"
+  end
+
+  get "/health", to: "health#show"
 end

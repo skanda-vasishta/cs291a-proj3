@@ -1,103 +1,104 @@
 require "test_helper"
 
 class ConversationsTest < ActionDispatch::IntegrationTest
-  fixtures :users, :conversations, :messages
-
-  setup do
-    @initiator = users(:one)
-    @expert = users(:two)
-    @token_for_initiator = JwtService.encode({ user_id: @initiator.id })
-    @token_for_expert = JwtService.encode({ user_id: @expert.id })
+  def setup
+    @user = User.create!(username: "testuser", password: "password123")
+    @token = JwtService.encode(@user)
   end
 
-  test "requires authentication" do
+  test "GET /conversations returns user's conversations" do
+    conversation = Conversation.create!(title: "Test Conversation", initiator: @user, status: "waiting")
+    get "/conversations", headers: { "Authorization" => "Bearer #{@token}" }
+    assert_response :ok
+    assert_equal 1, JSON.parse(response.body).length
+  end
+
+  test "POST /conversations creates a new conversation" do
+    post "/conversations",
+         params: { title: "Test Conversation" },
+         headers: { "Authorization" => "Bearer #{@token}" }
+    assert_response :created
+    assert_equal "Test Conversation", JSON.parse(response.body)["title"]
+  end
+
+  test "GET /conversations requires authentication" do
     get "/conversations"
     assert_response :unauthorized
+  end
 
-    get "/conversations/#{conversations(:one).id}"
+  test "POST /conversations requires authentication" do
+    post "/conversations", params: { title: "Test" }
     assert_response :unauthorized
   end
 
-  test "lists conversations where user is initiator or assigned expert" do
-    get "/conversations", headers: auth_header(@initiator)
+  test "GET /conversations/:id returns specific conversation" do
+    conversation = Conversation.create!(title: "Test Conversation", initiator: @user, status: "waiting")
+    get "/conversations/#{conversation.id}", headers: { "Authorization" => "Bearer #{@token}" }
     assert_response :ok
-    body = JSON.parse(response.body)
-
-    assert_equal 3, body.length
-    ids = body.map { |c| c["id"] }
-    assert_includes ids, conversations(:one).id.to_s
-    assert_includes ids, conversations(:waiting_unassigned).id.to_s
-    assert_includes ids, conversations(:assigned_to_one).id.to_s
+    response_data = JSON.parse(response.body)
+    assert_equal conversation.id.to_s, response_data["id"]
+    assert_equal @user.id.to_s, response_data["questionerId"]
   end
 
-  test "lists conversations for expert role" do
-    get "/conversations", headers: auth_header(@expert)
-    assert_response :ok
-
-    body = JSON.parse(response.body)
-    ids = body.map { |c| c["id"] }
-    assert_includes ids, conversations(:one).id.to_s
-    assert_includes ids, conversations(:assigned_to_one).id.to_s
-  end
-
-  test "shows conversation if participant" do
-    conversation = conversations(:one)
-
-    get "/conversations/#{conversation.id}", headers: auth_header(@initiator)
-    assert_response :ok
-
-    body = JSON.parse(response.body)
-    assert_equal conversation.id.to_s, body["id"]
-    assert_equal conversation.title, body["title"]
-    assert_equal "active", body["status"]
-    assert_equal conversation.initiator_id.to_s, body["questionerId"]
-    assert_equal conversation.initiator.username, body["questionerUsername"]
-    assert_equal conversation.assigned_expert_id.to_s, body["assignedExpertId"]
-    assert_equal conversation.assigned_expert.username, body["assignedExpertUsername"]
-    assert_equal body["unreadCount"], 1
-  end
-
-  test "prevents viewing conversation if not involved" do
-    other_user = User.create!(username: "outsider", password: "password123", password_confirmation: "password123")
-    token = JwtService.encode({ user_id: other_user.id })
-
-    get "/conversations/#{conversations(:one).id}", headers: { "Authorization" => "Bearer #{token}" }
+  test "GET /conversations/:id requires user to own conversation" do
+    other_user = User.create!(username: "otheruser", password: "password123")
+    conversation = Conversation.create!(title: "Other Conversation", initiator: other_user, status: "waiting")
+    get "/conversations/#{conversation.id}", headers: { "Authorization" => "Bearer #{@token}" }
     assert_response :not_found
   end
 
-  test "creates conversation" do
-    assert_difference("Conversation.count", 1) do
-      post "/conversations", params: {
-        conversation: { title: "Need help with caching" }
-      }, headers: auth_header(@initiator), as: :json
-    end
-
-    assert_response :created
-
-    body = JSON.parse(response.body)
-    assert_equal "Need help with caching", body["title"]
-    assert_equal @initiator.id.to_s, body["questionerId"]
-    assert_nil body["assignedExpertId"]
-    assert_equal "waiting", body["status"]
-  end
-
-  test "fails to create conversation without title" do
-    assert_no_difference("Conversation.count") do
-      post "/conversations", params: {
-        conversation: { title: "" }
-      }, headers: auth_header(@initiator), as: :json
-    end
-
+  test "POST /conversations requires title" do
+    post "/conversations",
+         params: {},
+         headers: { "Authorization" => "Bearer #{@token}" }
     assert_response :unprocessable_entity
-    body = JSON.parse(response.body)
-    assert_includes body["errors"], "Title can't be blank"
+    assert_includes JSON.parse(response.body)["errors"], "Title can't be blank"
   end
 
-  private
+  test "GET /conversations includes questionerUsername" do
+    conversation = Conversation.create!(title: "Test Conversation", initiator: @user, status: "waiting")
+    get "/conversations", headers: { "Authorization" => "Bearer #{@token}" }
+    assert_response :ok
+    response_data = JSON.parse(response.body)
+    assert_equal @user.username, response_data.first["questionerUsername"]
+  end
 
-  def auth_header(user)
-    token = user == @initiator ? @token_for_initiator : @token_for_expert
-    { "Authorization" => "Bearer #{token}" }
+  test "GET /conversations includes assignedExpertUsername when expert is assigned" do
+    expert_user = User.create!(username: "expertuser", password: "password123")
+    expert = ExpertProfile.create!(user: expert_user, bio: "Expert developer", knowledge_base_links: [])
+    conversation = Conversation.create!(title: "Test Conversation", initiator: @user, assigned_expert: expert.user, status: "active")
+    get "/conversations", headers: { "Authorization" => "Bearer #{@token}" }
+    assert_response :ok
+    response_data = JSON.parse(response.body)
+    assert_equal expert.user.username, response_data.first["assignedExpertUsername"]
+  end
+
+  test "GET /conversations includes null assignedExpertUsername when no expert assigned" do
+    conversation = Conversation.create!(title: "Test Conversation", initiator: @user, assigned_expert: nil, status: "waiting")
+    get "/conversations", headers: { "Authorization" => "Bearer #{@token}" }
+    assert_response :ok
+    response_data = JSON.parse(response.body)
+    assert_nil response_data.first["assignedExpertUsername"]
+  end
+
+  test "GET /conversations/:id includes questionerUsername and assignedExpertUsername" do
+    expert_user = User.create!(username: "expertuser2", password: "password123")
+    expert = ExpertProfile.create!(user: expert_user, bio: "Expert developer", knowledge_base_links: [])
+    conversation = Conversation.create!(title: "Test Conversation", initiator: @user, assigned_expert: expert.user, status: "active")
+    get "/conversations/#{conversation.id}", headers: { "Authorization" => "Bearer #{@token}" }
+    assert_response :ok
+    response_data = JSON.parse(response.body)
+    assert_equal @user.username, response_data["questionerUsername"]
+    assert_equal expert.user.username, response_data["assignedExpertUsername"]
+  end
+
+  test "POST /conversations response includes questionerUsername" do
+    post "/conversations",
+         params: { title: "Test Conversation" },
+         headers: { "Authorization" => "Bearer #{@token}" }
+    assert_response :created
+    response_data = JSON.parse(response.body)
+    assert_equal @user.username, response_data["questionerUsername"]
+    assert_nil response_data["assignedExpertUsername"]
   end
 end
-

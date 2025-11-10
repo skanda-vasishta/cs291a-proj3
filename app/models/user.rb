@@ -28,6 +28,7 @@ class User < ApplicationRecord
 
   validates :username, presence: true,
                        uniqueness: { case_sensitive: false }
+  validates :password, length: { minimum: 8 }, if: -> { password.present? }
   private
 
   def normalize_username

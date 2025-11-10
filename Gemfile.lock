@@ -149,6 +149,8 @@ GEM
       logger
     mini_mime (1.1.5)
     minitest (5.26.1)
+    mocha (2.7.1)
+      ruby2_keywords (>= 0.0.5)
     msgpack (1.8.0)
     mysql2 (0.5.7)
       bigdecimal
@@ -275,6 +277,7 @@ GEM
     ruby-vips (2.2.5)
       ffi (~> 1.12)
       logger
+    ruby2_keywords (0.0.5)
     securerandom (0.4.1)
     solid_cable (3.0.12)
       actioncable (>= 7.2)
@@ -329,6 +332,7 @@ DEPENDENCIES
   debug
   image_processing (~> 1.2)
   jwt
+  mocha
   mysql2 (~> 0.5)
   puma (>= 5.0)
   rack-cors

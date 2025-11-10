@@ -1,5 +1,6 @@
 class MessagesController < ApplicationController
   include JwtAuthenticatable
+  include MessagePresenter
 
   before_action :set_conversation
   before_action :ensure_participant!
@@ -57,17 +58,5 @@ class MessagesController < ApplicationController
     params.dig(:message, :content) || params[:content]
   end
 
-  def message_payload(message)
-    {
-      id: message.id.to_s,
-      conversationId: message.conversation_id.to_s,
-      senderId: message.sender_id.to_s,
-      senderUsername: message.sender.username,
-      senderRole: message.sender_role,
-      content: message.content,
-      timestamp: message.created_at.iso8601,
-      isRead: ActiveModel::Type::Boolean.new.cast(message.is_read)
-    }
-  end
 end
 
