@@ -18,4 +18,14 @@ Rails.application.routes.draw do
   end
 
   resources :messages, only: :create
+
+  scope :expert do
+    get "/profile", to: "expert_profiles#show"
+    put "/profile", to: "expert_profiles#update"
+
+    get "/queue", to: "expert#queue"
+    post "/conversations/:conversation_id/claim", to: "expert#claim"
+    post "/conversations/:conversation_id/unclaim", to: "expert#unclaim"
+    get "/assignments/history", to: "expert#history"
+  end
 end
