@@ -10,6 +10,7 @@ module JwtAuthenticatable
   def authenticate_with_jwt!
     payload = decode_jwt_from_header
     @current_user = User.find_by(id: payload[:user_id]) if payload
+    @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id].present?
     return if @current_user
 
     render(json: { error: "Unauthorized" }, status: :unauthorized) && return
