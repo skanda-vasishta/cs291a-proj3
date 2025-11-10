@@ -13,5 +13,9 @@ Rails.application.routes.draw do
     get "/me", to: "auth#me"
   end
 
-  resources :conversations, only: %i[index show create]
+  resources :conversations, only: %i[index show create] do
+    resources :messages, only: :index
+  end
+
+  resources :messages, only: :create
 end
