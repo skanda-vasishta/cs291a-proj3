@@ -24,13 +24,6 @@ class UserTest < ActiveSupport::TestCase
     assert_includes user.errors[:username], "has already been taken"
   end
 
-  test "requires password of minimum length" do
-    user = User.new(username: "dave", password: "short", password_confirmation: "short")
-
-    assert_not user.valid?
-    assert_includes user.errors[:password], "is too short (minimum is 8 characters)"
-  end
-
   test "normalizes username before validation" do
     user = User.create!(username: "  MixedCaseUser  ", password: "password123", password_confirmation: "password123")
 

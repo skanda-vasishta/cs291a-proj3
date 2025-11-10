@@ -1,0 +1,6 @@
+one:
+  user: two
+  bio: "Experienced Rails developer with mentoring experience."
+  knowledge_base_links:
+    - "https://guides.rubyonrails.org"
+    - "https://stackoverflow.com/questions/tagged/ruby-on-rails"

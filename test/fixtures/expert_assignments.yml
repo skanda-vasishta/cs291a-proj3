@@ -1,0 +1,6 @@
+one:
+  conversation: one
+  expert: two
+  status: active
+  assigned_at: <%= 30.minutes.ago %>
+  resolved_at:

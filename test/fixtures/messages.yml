@@ -1,0 +1,20 @@
+one:
+  conversation: one
+  sender: one
+  sender_role: initiator
+  content: "How do I deploy Rails?"
+  is_read: false
+
+two:
+  conversation: one
+  sender: two
+  sender_role: expert
+  content: "Let me help you with that."
+  is_read: false
+
+three:
+  conversation: assigned_to_one
+  sender: two
+  sender_role: initiator
+  content: "Expert question"
+  is_read: false

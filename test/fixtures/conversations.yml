@@ -1,0 +1,20 @@
+one:
+  title: "First conversation"
+  status: active
+  initiator: one
+  assigned_expert: two
+  last_message_at: <%= 1.hour.ago %>
+
+waiting_unassigned:
+  title: "Unassigned conversation"
+  status: waiting
+  initiator: one
+  assigned_expert:
+  last_message_at:
+
+assigned_to_one:
+  title: "Assigned to user one"
+  status: active
+  initiator: two
+  assigned_expert: one
+  last_message_at: <%= 30.minutes.ago %>
